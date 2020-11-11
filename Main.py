@@ -8,15 +8,27 @@ def connect():
         print(e)
 
 
-def addField(cur=None, **kwargs):
+def addTeacher(con=None, **items):
     try:
-        cur.execute(f"INSERT INTO schedule ({', '.join(kwargs)}) VALUES ({', '.join(kwargs.values())})")
+        con.execute(f"INSERT INTO teachers ({', '.join(items)}) VALUES({', '.join(items.values())})")
+    except ValueError:
+        print('Connection = NONE')
     except Exception as e:
         print(e)
 
+def addSubjbect(con=None, **items):
+    try:
+        con.execute(f"INSERT INTO subjects ({', '.join(items)}) VALUES({', '.join(items.values())})")
+    except ValueError:
+        print('Connection = NONE')
+    except Exception as e:
+        print(e)
 
 if __name__ == "__main__":
     con = connect()
     cur = con.cursor()
-    addField(cur, time="'15:00'", subj="'maths'", grade="9", teacher="'Alexander'", room="'A1'", day="0")
+    for i in 'математика, алгебра, геометрия, история, география, экономика,' \
+             'физика, химия, биология, обществознание, русскиий язык, литература,' \
+             'английский, иностранный язык, труд, технология, чертчение, спорт, IT'.split(', '):
+        addSubjbect(con, title=f"'{i}'")
     con.commit()
