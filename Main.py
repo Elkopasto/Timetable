@@ -1,5 +1,8 @@
 import sqlite3
 
+class DuplicateException(Exception):
+    pass
+
 
 def connect():
     try:
@@ -9,26 +12,45 @@ def connect():
 
 
 def addTeacher(con=None, **items):
+    # if con or items are not given func returns None
+    if con is None or items is None:
+        print('Not enough arguments')
+        return
+
+    # casting sqlite request to insert new values
     try:
         con.execute(f"INSERT INTO teachers ({', '.join(items)}) VALUES({', '.join(items.values())})")
-    except ValueError:
-        print('Connection = NONE')
-    except Exception as e:
+    except sqlite3.Error as e: # returns if sqlite error
+        print('Sqlite error: ' + e)
+    except Exception as e: # returns if any other case
         print(e)
 
-def addSubjbect(con=None, **items):
+def addSubject(con=None, title=None):
+    # if con or items are not given func returns None
+    if con is None or title is None:
+        print('Not enough args')
+        return
+
+    # casting sqlite request to insert new subject
     try:
-        con.execute(f"INSERT INTO subjects ({', '.join(items)}) VALUES({', '.join(items.values())})")
-    except ValueError:
-        print('Connection = NONE')
+        if sqlRequest(con, """SELECT title FROM subjects WHERE lower(title) = 'математика'""")[0][0] != title:
+            con.execute(f"INSERT INTO subjects (title) VALUES('{title.lower()}')")
+        else:
+            raise DuplicateException
+    except DuplicateException: # returns if there is already item with te same item
+        print('Row already exists')
+    except Sqlite3.Error as e: # returns if sqlite error
+        print('Sqlite error: ' + e)
+    except Exception as e: # returns if any other case
+        print(e)
+
+def sqlRequest(con=None, request=None):
+    try:
+        res = con.execute(request).fetchall()
+        return res
     except Exception as e:
         print(e)
 
 if __name__ == "__main__":
     con = connect()
     cur = con.cursor()
-    for i in 'математика, алгебра, геометрия, история, география, экономика,' \
-             'физика, химия, биология, обществознание, русскиий язык, литература,' \
-             'английский, иностранный язык, труд, технология, чертчение, спорт, IT'.split(', '):
-        addSubjbect(con, title=f"'{i}'")
-    con.commit()
