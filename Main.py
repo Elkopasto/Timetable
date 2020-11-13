@@ -1,4 +1,5 @@
 import sqlite3
+import mainUI
 
 
 class DuplicateException(Exception):
@@ -124,6 +125,8 @@ if __name__ == "__main__":
 
     lesson_timing = sqlite_db.request("""SELECT * FROM time WHERE id = id""")
     lesson_amount = len(lesson_timing)
+
+    MainUI.start_ui()
 
     for i in range(1, 3):
         print(f'\n grade {i} \n')
