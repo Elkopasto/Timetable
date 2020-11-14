@@ -1,8 +1,15 @@
 import sqlite3
 import mainUI
+from random import shuffle
+
+sqlite_db = None
 
 
 class DuplicateException(Exception):
+    pass
+
+
+class RequestError(Exception):
     pass
 
 
@@ -37,6 +44,10 @@ class SqliteDb:
             return res
         except Exception as e:
             print('Request error:', e)
+            return RequestError
+
+    def commit(self):
+        self.con.commit()
 
     def connect(self, path):
         try:
@@ -81,34 +92,45 @@ def add_subject(con=None, title=None):
         print(e)
 
 
-def create_class_day(con=None, grade=1, day=0):
+def check_grade_subj_limit(grade=1):
+    req = sqlite_db.request(f"SELECT SUM(subject_in_week) FROM grades_and_subjects WHERE grade={grade}")[0][0]
+    return True if req <= 30 else False
+
+
+def create_class_schedule(grade=1):
     subjects_bank = []
-    for subject in sqlite_db.request(f"SELECT subject, subject_day_limit FROM grades_and_subjects WHERE grade = {grade}"):
+    for subject in sqlite_db.request(f"SELECT subject, subject_in_week FROM grades_and_subjects WHERE grade = {grade}"):
         subjects_bank += [str(subject[0])] * subject[1]
 
     teachers = sqlite_db.request("SELECT id, subject_key FROM subjects_to_teachers"
                                  " JOIN teachers on teacher_key = id WHERE"
                                  " subject_key in ({})".format('"' + '", "'.join(subjects_bank) + '"'))
 
-    for hour in lesson_timing:
-        for j in subjects_bank:
-            subject_teachers = [teacher[0] for teacher in teachers if str(teacher[1]) == j]
+    repeating_subject = ''
+    for time in range(6):
+        for day in range(5):
+            for j in subjects_bank:
+                if repeating_subject != j:
+                    repeating_subject = ''
+                else:
+                    continue
 
-            if not subject_teachers:
-                continue
+                subject_teachers = [teacher[0] for teacher in teachers if str(teacher[1]) == j]
 
-            for subject_teacher in subject_teachers:
-                action_status = sqlite_db.add_to_schedule(time=hour[0], subj=j, grade=grade,
-                                                          teacher=subject_teacher, day=day)
-                if action_status:
-                    print(teachers, subject_teachers, sep='\n')
-                    print(subjects_bank)
-                    subjects_bank.remove(j)
-                    print(subjects_bank)
-                    break
+                if not subject_teachers:
+                    repeating_subject = j
+                    continue
+
+                for subject_teacher in subject_teachers:
+                    action_status = sqlite_db.add_to_schedule(time=time, subj=j, grade=grade,
+                                                              teacher=subject_teacher, day=day)
+                    if action_status != RequestError:
+                        subjects_bank.remove(j)
+                        break
                 else:
                     continue
                 break
+    print('in loop')
 
 
 def create_random_schedule(con=None):
@@ -120,14 +142,14 @@ def create_random_schedule(con=None):
 
 
 if __name__ == "__main__":
-    sqlite_db = SqliteDb('Timetable.sqlite')
-    con = sqlite_db.get_con()
+    if not sqlite_db:
+        sqlite_db = SqliteDb('Timetable.sqlite')
+        con = sqlite_db.get_con()
 
     lesson_timing = sqlite_db.request("""SELECT * FROM time WHERE id = id""")
     lesson_amount = len(lesson_timing)
 
-    MainUI.start_ui()
+    create_class_schedule()
 
-    for i in range(1, 3):
-        print(f'\n grade {i} \n')
-        create_class_day(con, i)
+    mainUI.start_ui(sqlite_db)
+
