@@ -1,7 +1,6 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtWidgets import QMainWindow, QMessageBox
 from _sqlite3 import Error
-import sys
 
 
 class TeachersView(object):
@@ -162,6 +161,8 @@ class TeachersView(object):
         self.subject_ids = {i: j for j, i in enumerate([i[0] for i in self.sqlite_db.request("SELECT title FROM subjects")])}
         self.teachers_ids = {i: j for j, i in self.sqlite_db.request("SELECT id, name FROM teachers")}
 
+        self.teacher_selector.clear()
+        self.subject_selector.clear()
         self.teacher_selector.addItems(self.teachers_ids.keys())
         self.subject_selector.addItems(self.subject_ids.keys())
 
@@ -183,6 +184,7 @@ class TeachersView(object):
             self.sqlite_db.commit()
 
         self.error.setText('')
+        self.update_selectors()
         self.update_results()
 
 

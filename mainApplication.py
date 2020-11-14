@@ -1,6 +1,5 @@
 import sqlite3
 import mainUI
-from random import shuffle
 
 sqlite_db = None
 
@@ -29,8 +28,6 @@ class SqliteDb:
 
     def add_to_schedule(self, **items):
         try:
-            print("INSERT INTO schedule('{0}') VALUES({1})".format(
-                "', '".join(items.keys()), ", ".join(map(str, items.values()))))
             self.con.execute("INSERT INTO schedule('{0}') VALUES({1})".format(
                 "', '".join(items.keys()), ", ".join(map(str, items.values()))))
             self.con.commit()
@@ -124,21 +121,18 @@ def create_class_schedule(grade=1):
                 for subject_teacher in subject_teachers:
                     action_status = sqlite_db.add_to_schedule(time=time, subj=j, grade=grade,
                                                               teacher=subject_teacher, day=day)
-                    if action_status != RequestError:
+
+                    if action_status:
                         subjects_bank.remove(j)
                         break
                 else:
                     continue
                 break
-    print('in loop')
 
 
-def create_random_schedule(con=None):
-    if not con:
-        print('Connection is not given')
-        return
-
-    pass
+def create_school_schedule():
+    for i in range(1, 12):
+        create_class_schedule(i)
 
 
 if __name__ == "__main__":
@@ -149,7 +143,5 @@ if __name__ == "__main__":
     lesson_timing = sqlite_db.request("""SELECT * FROM time WHERE id = id""")
     lesson_amount = len(lesson_timing)
 
-    create_class_schedule()
-
-    mainUI.start_ui(sqlite_db)
+    mainUI.start_ui(sqlite_db, create_school_schedule)
 
